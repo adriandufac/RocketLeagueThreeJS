@@ -7,6 +7,7 @@ import Time from "./Utils/Time";
 import World from "./World/World";
 import Ressources from "./Utils/Ressources";
 import sources from "./sources";
+import Debug from "./Utils/Debug";
 
 let instance = null;
 
@@ -23,6 +24,7 @@ export default class Game extends EventEmitter {
     this.canvas = canvas;
 
     //setup
+    this.debug = new Debug();
     this.sizes = new Sizes();
     this.time = new Time();
     this.scene = new THREE.Scene();
