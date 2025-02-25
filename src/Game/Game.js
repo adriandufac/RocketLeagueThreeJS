@@ -9,6 +9,8 @@ import Ressources from "./Utils/Ressources";
 import sources from "./sources";
 import Debug from "./Utils/Debug";
 import Physics from "./Physics";
+import inputs from "./inputsArray";
+import Inputs from "./Utils/Inputs";
 
 let instance = null;
 
@@ -34,6 +36,7 @@ export default class Game extends EventEmitter {
     this.renderer = new Renderer();
     this.physics = new Physics();
     this.world = new World();
+    this.inputs = new Inputs(inputs);
 
     this.sizes.on("resize", () => {
       this.resize();
@@ -41,6 +44,13 @@ export default class Game extends EventEmitter {
 
     this.time.on("tick", () => {
       this.update();
+    });
+
+    this.inputs.on("keyDown", (mapName) => {
+      console.log(mapName, "keyDown");
+    });
+    this.inputs.on("keyUp", (mapName) => {
+      console.log(mapName, "keyUp");
     });
   }
 
