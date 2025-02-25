@@ -10,6 +10,15 @@ export default class Inputs extends EventEmitter {
     window.addEventListener("keyup", (_event) => {
       this.up(_event.code);
     });
+    window.addEventListener("mousedown", (_event) => {
+      this.down(_event.button.toString());
+      console.log("click");
+    });
+    window.addEventListener("mouseup", (_event) => {
+      this.up(_event.button.toString());
+      console.log(_event.button);
+      console.log("meh");
+    });
   }
 
   down(key) {

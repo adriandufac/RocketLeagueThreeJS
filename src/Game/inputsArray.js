@@ -17,6 +17,6 @@ export default [
   },
   {
     name: "jump",
-    keys: ["Space"],
+    keys: ["2"],
   },
 ];

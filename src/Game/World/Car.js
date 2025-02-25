@@ -358,16 +358,9 @@ export default class Car {
       this.physicsBody.boxRigidBody.setLinvel({ x: 1.0, y: 0.0, z: 0.0 }, true);
 
       //this.physicsBody.boxRigidBody.setAngvel({ x: 2.0, y: 0.0, z: 0.0 }, true);
-      //this.update();
     }
   }
-  stop() {
-    /* if (this.physicsBody.boxRigidBody) {
-      console.log("stop");
-      this.physicsBody.boxRigidBody.setLinvel({ x: 0.0, y: 0.0, z: 0.0 }, true);
-      this.update();
-    } */
-  }
+
   moveBackward() {
     if (this.physicsBody.boxRigidBody) {
       console.log("move backward");
@@ -375,7 +368,6 @@ export default class Car {
         { x: -1.0, y: 0.0, z: 0.0 },
         true
       );
-      //this.update();
     }
   }
 }
