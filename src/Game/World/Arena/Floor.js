@@ -6,6 +6,7 @@ export default class Floor {
     this.game = new Game();
     this.scene = this.game.scene;
     this.ressources = this.game.ressources;
+    this.physics = this.game.physics;
 
     this.setGeometry();
     this.setTextures();
@@ -31,5 +32,6 @@ export default class Floor {
     //this.mesh.position.y = -0.5;
     this.mesh.receiveShadow = true;
     this.scene.add(this.mesh);
+    this.physicsBody = this.physics.addEntity(this);
   }
 }

@@ -1,4 +1,7 @@
 import restart from "vite-plugin-restart";
+import { defineConfig } from "vite";
+import wasm from "vite-plugin-wasm";
+import topLevelAwait from "vite-plugin-top-level-await";
 
 export default {
   root: "src/", // Sources files (typically where index.html is)
@@ -13,6 +16,11 @@ export default {
     sourcemap: true, // Add sourcemap
   },
   plugins: [
+    wasm(),
+    topLevelAwait(),
     restart({ restart: ["../static/**"] }), // Restart server on static file change
   ],
+  optimizeDeps: {
+    exclude: ["@dimforge/rapier3d-compat"],
+  },
 };

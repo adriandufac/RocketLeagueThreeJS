@@ -8,6 +8,7 @@ import World from "./World/World";
 import Ressources from "./Utils/Ressources";
 import sources from "./sources";
 import Debug from "./Utils/Debug";
+import Physics from "./Physics";
 
 let instance = null;
 
@@ -31,6 +32,7 @@ export default class Game extends EventEmitter {
     this.ressources = new Ressources(sources);
     this.camera = new Camera();
     this.renderer = new Renderer();
+    this.physics = new Physics();
     this.world = new World();
 
     this.sizes.on("resize", () => {
@@ -47,6 +49,7 @@ export default class Game extends EventEmitter {
     this.renderer.resize();
   }
   update() {
+    this.physics.update();
     this.camera.update();
     this.world.update();
     this.renderer.update();
