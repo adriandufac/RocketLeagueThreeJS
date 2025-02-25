@@ -14,7 +14,11 @@ import Inputs from "./Utils/Inputs";
 import PhysicsDebug from "./PhysicsDebug";
 
 let instance = null;
-
+const keys = {
+  forward: false,
+  backward: false,
+  jump: false,
+};
 export default class Game extends EventEmitter {
   constructor(canvas) {
     super();
@@ -47,19 +51,35 @@ export default class Game extends EventEmitter {
     this.time.on("tick", () => {
       this.update();
     });
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "KeyW" && this.world.car.carGrounded)
+        keys.forward = true;
+      if (event.code === "KeyS" && this.world.car.carGrounded)
+        keys.backward = true;
+    });
+    window.addEventListener("mousedown", (event) => {
+      if (event.button === 2 && this.world.car.carGrounded) keys.jump = true;
+    });
+    window.addEventListener("mouseup", (event) => {
+      if (event.button === 2 && this.world.car.carGrounded) keys.jump = false;
+    });
 
-    this.inputs.on("keyDown", (mapName) => {
+    window.addEventListener("keyup", (event) => {
+      if (event.code === "KeyW") keys.forward = false;
+      if (event.code === "KeyS") keys.backward = false;
+    });
+    /*   this.inputs.on("keyDown", (mapName) => {
       console.log(mapName, "keyDown");
 
-      if (mapName === "jump") {
-        this.world.car.jump();
+      if (mapName === "jump" && this.world.car.carGrounded) {
+        keys.jump = true;
       }
       if (mapName === "forward" && this.world.car.carGrounded) {
-        this.world.car.moveForward();
+        keys.forward = true;
         this.world.car.isMovingForward = true;
       }
       if (mapName === "backward" && this.world.car.carGrounded) {
-        this.world.car.moveBackward();
+        keys.backward = true;
         this.world.car.isMovingBackward = true;
       }
       //this.update();
@@ -68,12 +88,14 @@ export default class Game extends EventEmitter {
       console.log(mapName, "keyUp");
       if (mapName === "forward") {
         this.world.car.isMovingForward = false;
+        keys.forward = false;
       }
       if (mapName === "backward") {
         this.world.car.isMovingBackward = false;
+        keys.backward = false;
       }
       //this.update();
-    });
+    }); */
   }
 
   resize() {
@@ -82,6 +104,16 @@ export default class Game extends EventEmitter {
   }
   update() {
     if (this.physicsReady) {
+      if (keys.forward) {
+        this.world.car.moveForward();
+      }
+      if (keys.backward) {
+        this.world.car.moveBackward();
+      }
+      if (keys.jump) {
+        this.world.car.jump();
+        keys.jump = false;
+      }
       this.physics.update();
       this.physicsDebug.update();
       this.camera.update();

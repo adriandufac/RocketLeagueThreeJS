@@ -353,9 +353,15 @@ export default class Car {
     }
   }
   moveForward() {
+    //right now it use the global X axis, we need to change it to the MODEL X axis
+
     if (this.physicsBody.boxRigidBody) {
       console.log("move forward");
-      this.physicsBody.boxRigidBody.setLinvel({ x: 1.0, y: 0.0, z: 0.0 }, true);
+      const currentVelocity = this.physicsBody.boxRigidBody.linvel();
+      this.physicsBody.boxRigidBody.setLinvel(
+        { x: 1.0, y: currentVelocity.y, z: currentVelocity.z },
+        true
+      );
 
       //this.physicsBody.boxRigidBody.setAngvel({ x: 2.0, y: 0.0, z: 0.0 }, true);
     }
@@ -363,9 +369,10 @@ export default class Car {
 
   moveBackward() {
     if (this.physicsBody.boxRigidBody) {
+      const currentVelocity = this.physicsBody.boxRigidBody.linvel();
       console.log("move backward");
       this.physicsBody.boxRigidBody.setLinvel(
-        { x: -1.0, y: 0.0, z: 0.0 },
+        { x: -1.0, y: currentVelocity.y, z: currentVelocity.z },
         true
       );
     }
