@@ -8,7 +8,7 @@ export default class Physics {
   constructor() {
     this.game = new Game();
     this.debug = this.game.debug;
-    this.gravity = { x: 0, y: -9, z: 0 };
+    this.gravity = { x: 0, y: -5, z: 0 };
     this.physicsObjects = [];
     if (this.debug.active) {
       this.debugFolder = this.debug.ui.addFolder("physics");
@@ -35,15 +35,12 @@ export default class Physics {
     // Create physics world (note capital W in World)
     this.world = new RAPIER.World(this.gravity);
 
-    console.log("Physics initialized!");
-
     // Trigger any waiting functions
     if (this.onReady) this.onReady();
   }
 
   addEntity(entity) {
     if (!this.world || !this.RAPIER) {
-      console.warn("Physics not initialized yet");
       // Queue this entity to be added when physics is ready
       this.entitiesToAdd = this.entitiesToAdd || [];
       this.entitiesToAdd.push(entity);
@@ -51,7 +48,6 @@ export default class Physics {
     }
 
     if (entity instanceof Car) {
-      console.log("its a car");
       const carHitBoxGeometry = entity.hitBoxGeometry;
       const carHitBoxMesh = entity.carHitbox;
       const size = {
@@ -59,7 +55,6 @@ export default class Physics {
         y: carHitBoxGeometry.parameters.height,
         z: carHitBoxGeometry.parameters.depth,
       };
-      console.log(size);
 
       const boxRigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(
         carHitBoxMesh.position.x,
@@ -75,13 +70,13 @@ export default class Physics {
         size.y / 2,
         size.z / 2
       );
-      this.world.createCollider(boxColliderDesc, boxRigidBody);
+      const collider = this.world.createCollider(boxColliderDesc, boxRigidBody);
       this.physicsObjects.push({
         entity: entity,
         rigidBody: boxRigidBody,
       });
 
-      return boxRigidBody;
+      return { boxRigidBody, collider };
     }
 
     if (entity instanceof Floor) {
@@ -117,7 +112,6 @@ export default class Physics {
 
   removeEntity(entity) {
     if (!this.world) {
-      console.warn("Physics not initialized yet - cannot remove entity");
       return false;
     }
     const index = this.physicsObjects.findIndex((obj) => obj.entity === entity);
@@ -133,7 +127,6 @@ export default class Physics {
         this.world.removeRigidBody(rigidBody);
 
         // Log for debugging
-        console.log(`Removed physics entity: ${entity.type || "unknown"}`);
       }
 
       // Remove from our tracking array
@@ -156,7 +149,6 @@ export default class Physics {
         return true;
       }
 
-      console.warn("Entity not found in physics system");
       return false;
     }
   }
@@ -170,5 +162,9 @@ export default class Physics {
         }
       }
     }
+  }
+  onReady() {
+    this.game.physicsDebug.setup();
+    this.game.physicsReady = true;
   }
 }

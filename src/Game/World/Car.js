@@ -6,24 +6,32 @@ export default class Car {
     this.game = new Game();
     this.scene = this.game.scene;
     this.ressources = this.game.ressources;
+    this.isMovingForward = false;
+    this.isMovingBackward = false;
     this.time = this.game.time;
     this.debug = this.game.debug;
     this.physics = this.game.physics;
     if (this.debug.active) {
       this.debugFolder = this.debug.ui.addFolder("car");
     }
-
+    this.carGrounded = true;
     this.debugObject = {};
     this.debugObject.scale = 0.01;
     this.debugObject.hitBoxRatios = {
       x: 0.8,
       y: 0.9,
     };
+    this.debugObject.jumpForce = 1.4;
 
     //setup
     this.ressource = this.ressources.items["octaneModel"];
 
     if (this.debug.active) {
+      this.debugFolder
+        .add(this.debugObject, "jumpForce")
+        .min(0.5)
+        .max(10)
+        .step(0.1);
       this.debugFolder
         .add(this.debugObject.hitBoxRatios, "x")
         .min(0.5)
@@ -222,7 +230,7 @@ export default class Car {
       color: 0x00ff00, // Green color
       wireframe: true, // Make it wireframe
       transparent: true, // Enable transparency
-      opacity: 0.5, // Semi-transparent
+      opacity: 0.1, // Semi-transparent
     });
     this.carHitbox = new THREE.Mesh(this.hitBoxGeometry, wireframeMaterial);
     this.carHitbox.position.copy(center);
@@ -236,9 +244,15 @@ export default class Car {
   }
 
   update() {
-    if (this.physicsBody) {
+    if (this.physicsBody.boxRigidBody) {
+      if (this.isMovingForward) {
+        this.moveForward();
+      }
+      if (this.isMovingBackward) {
+        this.moveBackward();
+      }
       // Get position from physics simulation
-      const position = this.physicsBody.translation();
+      const position = this.physicsBody.boxRigidBody.translation();
 
       // Update hitbox position
       this.carHitbox.position.set(position.x, position.y, position.z);
@@ -246,7 +260,7 @@ export default class Car {
       // Calculate the offset between the hitbox center and model origin
 
       // Update model position to match the hitbox, applying the offset
-      console.log(this.boxModelOffset);
+
       this.model.position.set(
         position.x,
         position.y - this.boxModelOffset + this.carHitboxOffset,
@@ -254,7 +268,7 @@ export default class Car {
       );
 
       // Get rotation from physics simulation
-      const rotation = this.physicsBody.rotation();
+      const rotation = this.physicsBody.boxRigidBody.rotation();
 
       // Apply rotation to both hitbox and model
       this.carHitbox.quaternion.set(
@@ -264,6 +278,104 @@ export default class Car {
         rotation.w
       );
       this.model.quaternion.copy(this.carHitbox.quaternion);
+    }
+    this.carGrounded = this.detectGround();
+  }
+
+  detectGround() {
+    const { boxRigidBody, collider } = this.physicsBody; // Extract boxRigidBody and collider
+
+    // Default fallback for half extents
+    let halfExtents = { x: 1, y: 1, z: 1 };
+
+    // Check if we have a valid collider and if it's a cuboid
+    if (
+      collider &&
+      collider.desc &&
+      collider.desc.shape &&
+      collider.desc.shape.halfExtents
+    ) {
+      halfExtents = collider.desc.shape.halfExtents;
+    }
+
+    // Raycast offsets based on the box dimensions (half extents)
+    const rayOriginOffsets = [
+      new THREE.Vector3(halfExtents.x, 0, halfExtents.z), // Front-right
+      new THREE.Vector3(-halfExtents.x, 0, halfExtents.z), // Front-left
+      new THREE.Vector3(halfExtents.x, 0, -halfExtents.z), // Back-right
+      new THREE.Vector3(-halfExtents.x, 0, -halfExtents.z), // Back-left
+    ];
+
+    const groundDistanceThreshold = 0.3; // Very short distance threshold
+    // Count the number of successful raycast hits
+    let groundedRayCount = 0;
+    // Check if all 4 raycasts hit the ground
+
+    rayOriginOffsets.forEach((offset) => {
+      const position = boxRigidBody.translation(); // Correct way to get the position
+      const rayOrigin = new THREE.Vector3(
+        position.x,
+        position.y,
+        position.z
+      ).add(offset); // Using boxRigidBody's translation
+      const rayDirection = new THREE.Vector3(0, -1, 0); // Ray points downward
+
+      // Create a ray using Rapier's Ray class (without needing RAPIER.Ray)
+      const ray = new this.physics.RAPIER.Ray(rayOrigin, rayDirection);
+
+      // Cast the ray to detect collisions
+      const hit = this.physics.world.castRay(ray, groundDistanceThreshold);
+
+      // If the ray hit something within the threshold distance, increment groundedRayCount
+      if (hit) {
+        groundedRayCount++;
+      }
+    });
+    //  console.log(`Grounded Ray Count: ${groundedRayCount}`);
+
+    // If all 4 rays hit the ground, the car is considered grounded
+    const isCarGrounded = groundedRayCount === 4;
+
+    // Log the final result
+    console.log(`Car Grounded: ${isCarGrounded}`);
+
+    return isCarGrounded;
+  }
+
+  jump() {
+    console.log("tryingto jump", this.carGrounded);
+    if (this.physicsBody.boxRigidBody && this.carGrounded) {
+      this.physicsBody.boxRigidBody.applyImpulse(
+        { x: 0.0, y: this.debugObject.jumpForce, z: 0.0 },
+        true
+      );
+      this.update();
+    }
+  }
+  moveForward() {
+    if (this.physicsBody.boxRigidBody) {
+      console.log("move forward");
+      this.physicsBody.boxRigidBody.setLinvel({ x: 1.0, y: 0.0, z: 0.0 }, true);
+
+      //this.physicsBody.boxRigidBody.setAngvel({ x: 2.0, y: 0.0, z: 0.0 }, true);
+      //this.update();
+    }
+  }
+  stop() {
+    /* if (this.physicsBody.boxRigidBody) {
+      console.log("stop");
+      this.physicsBody.boxRigidBody.setLinvel({ x: 0.0, y: 0.0, z: 0.0 }, true);
+      this.update();
+    } */
+  }
+  moveBackward() {
+    if (this.physicsBody.boxRigidBody) {
+      console.log("move backward");
+      this.physicsBody.boxRigidBody.setLinvel(
+        { x: -1.0, y: 0.0, z: 0.0 },
+        true
+      );
+      //this.update();
     }
   }
 }

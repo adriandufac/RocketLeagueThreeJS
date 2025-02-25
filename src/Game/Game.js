@@ -11,6 +11,7 @@ import Debug from "./Utils/Debug";
 import Physics from "./Physics";
 import inputs from "./inputsArray";
 import Inputs from "./Utils/Inputs";
+import PhysicsDebug from "./PhysicsDebug";
 
 let instance = null;
 
@@ -35,6 +36,7 @@ export default class Game extends EventEmitter {
     this.camera = new Camera();
     this.renderer = new Renderer();
     this.physics = new Physics();
+    this.physicsDebug = new PhysicsDebug();
     this.world = new World();
     this.inputs = new Inputs(inputs);
 
@@ -48,9 +50,29 @@ export default class Game extends EventEmitter {
 
     this.inputs.on("keyDown", (mapName) => {
       console.log(mapName, "keyDown");
+
+      if (mapName === "jump") {
+        this.world.car.jump();
+      }
+      if (mapName === "forward" && this.world.car.carGrounded) {
+        this.world.car.moveForward();
+        this.world.car.isMovingForward = true;
+      }
+      if (mapName === "backward" && this.world.car.carGrounded) {
+        this.world.car.moveBackward();
+        this.world.car.isMovingBackward = true;
+      }
+      //this.update();
     });
     this.inputs.on("keyUp", (mapName) => {
       console.log(mapName, "keyUp");
+      if (mapName === "forward") {
+        this.world.car.isMovingForward = false;
+      }
+      if (mapName === "backward") {
+        this.world.car.isMovingBackward = false;
+      }
+      //this.update();
     });
   }
 
@@ -59,9 +81,12 @@ export default class Game extends EventEmitter {
     this.renderer.resize();
   }
   update() {
-    this.physics.update();
-    this.camera.update();
-    this.world.update();
-    this.renderer.update();
+    if (this.physicsReady) {
+      this.physics.update();
+      this.physicsDebug.update();
+      this.camera.update();
+      this.world.update();
+      this.renderer.update();
+    }
   }
 }
