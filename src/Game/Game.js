@@ -18,6 +18,8 @@ const keys = {
   forward: false,
   backward: false,
   jump: false,
+  barrelRight: false,
+  barrelLeft: false,
 };
 export default class Game extends EventEmitter {
   constructor(canvas) {
@@ -68,6 +70,12 @@ export default class Game extends EventEmitter {
       if (mapName === "right") {
         keys.right = true;
       }
+      if (mapName === "barrelRight") {
+        keys.barrelRight = true;
+      }
+      if (mapName === "barrelLeft") {
+        keys.barrelLeft = true;
+      }
     });
     this.inputs.on("keyUp", (mapName) => {
       console.log(mapName, "keyUp");
@@ -85,6 +93,12 @@ export default class Game extends EventEmitter {
       }
       if (mapName === "right") {
         keys.right = false;
+      }
+      if (mapName === "barrelRight") {
+        keys.barrelRight = false;
+      }
+      if (mapName === "barrelLeft") {
+        keys.barrelLeft = false;
       }
     });
   }

@@ -19,4 +19,12 @@ export default [
     name: "jump",
     keys: ["2"],
   },
+  {
+    name: "barrelRight",
+    keys: ["KeyE"],
+  },
+  {
+    name: "barrelLeft",
+    keys: ["KeyQ"],
+  },
 ];

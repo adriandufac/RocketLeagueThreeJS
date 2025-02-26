@@ -106,6 +106,12 @@ export default class Car {
       if (keys.jump && this.carGrounded) {
         this.jump();
       }
+      if (keys.barrelRight && !this.carGrounded) {
+        this.barrelRight();
+      }
+      if (keys.barrelLeft && !this.carGrounded) {
+        this.barrelLeft();
+      }
       // Get position from physics simulation
       const position = this.physicsBody.boxRigidBody.translation();
       // Get rotation from physics simulation
@@ -502,6 +508,77 @@ export default class Car {
         true
       );
     }
+  }
+  barrelLeft() {
+    if (!this.physicsBody.boxRigidBody) return;
+
+    // Get current orientation
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Create quaternion from current rotation
+    const quat = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Create a pure rotation quaternion for the X axis
+    const rotationQuat = new THREE.Quaternion();
+    rotationQuat.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.03); // X-axis, positive for left roll
+
+    // Apply this rotation in local space
+    quat.multiply(rotationQuat);
+
+    // Set the new rotation directly
+    this.physicsBody.boxRigidBody.setRotation(
+      {
+        x: quat.x,
+        y: quat.y,
+        z: quat.z,
+        w: quat.w,
+      },
+      true
+    );
+
+    // Reset angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+  }
+
+  barrelRight() {
+    if (!this.physicsBody.boxRigidBody) return;
+
+    // Get current orientation
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Create quaternion from current rotation
+    const quat = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Create a pure rotation quaternion for the X axis
+    const rotationQuat = new THREE.Quaternion();
+    rotationQuat.setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.03); // X-axis, negative for right roll
+
+    // Apply this rotation in local space
+    quat.multiply(rotationQuat);
+
+    // Set the new rotation directly
+    this.physicsBody.boxRigidBody.setRotation(
+      {
+        x: quat.x,
+        y: quat.y,
+        z: quat.z,
+        w: quat.w,
+      },
+      true
+    );
+
+    // Reset angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }
 
   limitAngVel(angVel, maxValues = { x: 0.8, y: 0.8, z: 0.8 }) {
