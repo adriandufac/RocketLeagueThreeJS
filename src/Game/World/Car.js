@@ -39,7 +39,7 @@ export default class Car {
     if (position) {
       this.model.position.set(position.x, position.y, position.z);
     } else {
-      this.model.position.set(0, 5, 0);
+      this.model.position.set(0, 2, 0);
     }
     this.model.scale.set(
       this.debugObject.scale,
@@ -86,38 +86,55 @@ export default class Car {
   update(keys) {
     if (this.physicsBody.boxRigidBody) {
       if (keys.forward && this.carGrounded) {
-        this.moveForward();
+        this.moveForward(keys);
+      }
+      if (keys.forward && !this.carGrounded) {
+        this.rotateForward();
+      }
+      if (keys.left && !this.carGrounded) {
+        this.rotateLeft();
+      }
+      if (keys.right && !this.carGrounded) {
+        this.rotateRight();
       }
       if (keys.backward && this.carGrounded) {
         this.moveBackward();
+      }
+      if (keys.backward && !this.carGrounded) {
+        this.rotateBackward();
       }
       if (keys.jump && this.carGrounded) {
         this.jump();
       }
       // Get position from physics simulation
       const position = this.physicsBody.boxRigidBody.translation();
-
-      // Update hitbox position
-      this.carHitbox.position.set(position.x, position.y, position.z);
-
-      // Update model position to match hitbox
-      // Update model position to match the hitbox, applying the offset
-      this.model.position.set(
-        position.x,
-        position.y - this.boxModelOffset + this.carHitboxOffset,
-        position.z
-      );
-
       // Get rotation from physics simulation
       const rotation = this.physicsBody.boxRigidBody.rotation();
-
-      // Apply rotation to both hitbox and model
+      // Update hitbox position
+      this.carHitbox.position.set(position.x, position.y, position.z);
       this.carHitbox.quaternion.set(
         rotation.x,
         rotation.y,
         rotation.z,
         rotation.w
       );
+      // Calculate doffset in local space
+      const offsetVector = new THREE.Vector3(
+        0,
+        -this.boxModelOffset + this.carHitboxOffset,
+        0
+      );
+      // Apply car's rotation to the offset vector to get it in world space
+      offsetVector.applyQuaternion(this.carHitbox.quaternion);
+      // Update model position to match hitbox
+      // Update model position to match the hitbox, applying the offset
+      // Apply position with rotated offset
+      this.model.position.set(
+        position.x + offsetVector.x,
+        position.y + offsetVector.y,
+        position.z + offsetVector.z
+      );
+
       this.model.quaternion.copy(this.carHitbox.quaternion);
     }
     this.carGrounded = this.detectGround();
@@ -125,7 +142,7 @@ export default class Car {
 
   detectGround() {
     const { boxRigidBody, collider } = this.physicsBody; // Extract boxRigidBody and collider
-    console.log(collider);
+
     // Default fallback for half extents
     let halfExtents = { x: 1, y: 1, z: 1 };
 
@@ -251,9 +268,6 @@ export default class Car {
     // If all 4 rays hit the ground, the car is considered grounded
     const isCarGrounded = groundedRayCount === 4;
 
-    // Log the final result
-    console.log(`Car Grounded: ${isCarGrounded}`);
-
     return isCarGrounded;
   }
 
@@ -266,7 +280,165 @@ export default class Car {
       );
     }
   }
-  moveForward() {
+  getCarAxis(localAxis) {
+    if (!this.physicsBody.boxRigidBody) return localAxis.clone();
+
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+    const carQuaternion = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    return localAxis.clone().applyQuaternion(carQuaternion);
+  }
+  rotateForward() {
+    if (this.physicsBody.boxRigidBody) {
+      // Get current angular velocity
+      const currentAngVel = this.physicsBody.boxRigidBody.angvel();
+
+      // Get current orientation
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      // Create quaternion from current rotation
+      const quat = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // CRITICAL FIX: Create a pure rotation quaternion for just the axis we want to rotate around
+      // This prevents mixing of axes when the car is already rotated
+      const rotationQuat = new THREE.Quaternion();
+      rotationQuat.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -0.02); // Z-axis, negative for forward
+
+      // Apply this rotation in local space
+      quat.multiply(rotationQuat);
+
+      // Set the new rotation directly
+      this.physicsBody.boxRigidBody.setRotation(
+        {
+          x: quat.x,
+          y: quat.y,
+          z: quat.z,
+          w: quat.w,
+        },
+        true
+      );
+
+      // Reset angular velocity to prevent unwanted spinning
+      // Can be adjusted if you want some momentum
+      this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+  }
+  rotateBackward() {
+    if (this.physicsBody.boxRigidBody) {
+      // Get current orientation
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      // Create quaternion from current rotation
+      const quat = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // Create a pure rotation quaternion for the Z axis (positive for backward)
+      const rotationQuat = new THREE.Quaternion();
+      rotationQuat.setFromAxisAngle(new THREE.Vector3(0, 0, 1), 0.02); // Z-axis, positive for backward
+
+      // Apply this rotation in local space
+      quat.multiply(rotationQuat);
+
+      // Set the new rotation directly
+      this.physicsBody.boxRigidBody.setRotation(
+        {
+          x: quat.x,
+          y: quat.y,
+          z: quat.z,
+          w: quat.w,
+        },
+        true
+      );
+
+      // Reset angular velocity
+      this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+  }
+  rotateLeft() {
+    if (this.physicsBody.boxRigidBody) {
+      // Get current orientation
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      // Create quaternion from current rotation
+      const quat = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // Create a pure rotation quaternion for the Y axis
+      const rotationQuat = new THREE.Quaternion();
+      rotationQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.02); // Y-axis, positive for left
+
+      // Apply this rotation in local space
+      quat.multiply(rotationQuat);
+
+      // Set the new rotation directly
+      this.physicsBody.boxRigidBody.setRotation(
+        {
+          x: quat.x,
+          y: quat.y,
+          z: quat.z,
+          w: quat.w,
+        },
+        true
+      );
+
+      // Reset angular velocity
+      this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+  }
+  rotateRight() {
+    if (this.physicsBody.boxRigidBody) {
+      // Get current orientation
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      // Create quaternion from current rotation
+      const quat = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // Create a pure rotation quaternion for the Y axis
+      const rotationQuat = new THREE.Quaternion();
+      rotationQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -0.02); // Y-axis, negative for right
+
+      // Apply this rotation in local space
+      quat.multiply(rotationQuat);
+
+      // Set the new rotation directly
+      this.physicsBody.boxRigidBody.setRotation(
+        {
+          x: quat.x,
+          y: quat.y,
+          z: quat.z,
+          w: quat.w,
+        },
+        true
+      );
+
+      // Reset angular velocity
+      this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+  }
+  moveForward(keys) {
     //right now it use the global X axis, we need to change it to the MODEL X axis
 
     if (this.physicsBody.boxRigidBody) {
@@ -294,6 +466,12 @@ export default class Car {
         { x: forwardVector.x, y: currentVelocity.y, z: forwardVector.z },
         true
       );
+      if (keys.left) {
+        this.rotateLeft();
+      }
+      if (keys.right) {
+        this.rotateRight();
+      }
     }
   }
 
@@ -324,6 +502,15 @@ export default class Car {
         true
       );
     }
+  }
+
+  limitAngVel(angVel, maxValues = { x: 0.8, y: 0.8, z: 0.8 }) {
+    // Clamp each component
+    angVel.x = Math.max(-maxValues.x, Math.min(maxValues.x, angVel.x));
+    angVel.y = Math.max(-maxValues.y, Math.min(maxValues.y, angVel.y));
+    angVel.z = Math.max(-maxValues.z, Math.min(maxValues.z, angVel.z));
+
+    return angVel;
   }
 
   initRaycastVisuals() {

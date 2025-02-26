@@ -8,7 +8,7 @@ export default class Physics {
   constructor() {
     this.game = new Game();
     this.debug = this.game.debug;
-    this.gravity = { x: 0, y: -5, z: 0 };
+    this.gravity = { x: 0, y: 0, z: 0 };
     this.physicsObjects = [];
     if (this.debug.active) {
       this.debugFolder = this.debug.ui.addFolder("physics");
@@ -56,11 +56,13 @@ export default class Physics {
         z: carHitBoxGeometry.parameters.depth,
       };
 
-      const boxRigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(
-        carHitBoxMesh.position.x,
-        carHitBoxMesh.position.y,
-        carHitBoxMesh.position.z
-      );
+      const boxRigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(
+          carHitBoxMesh.position.x,
+          carHitBoxMesh.position.y,
+          carHitBoxMesh.position.z
+        )
+        .setAngularDamping(2.0);
       // Set initial velocity to zero to prevent immediate falling
       boxRigidBodyDesc.setLinvel(0, 0, 0);
 

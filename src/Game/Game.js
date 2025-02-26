@@ -51,23 +51,7 @@ export default class Game extends EventEmitter {
     this.time.on("tick", () => {
       this.update();
     });
-    /*  window.addEventListener("keydown", (event) => {
-      if (event.code === "KeyW" && this.world.car.carGrounded)
-        keys.forward = true;
-      if (event.code === "KeyS" && this.world.car.carGrounded)
-        keys.backward = true;
-    });
-    window.addEventListener("mousedown", (event) => {
-      if (event.button === 2 && this.world.car.carGrounded) keys.jump = true;
-    });
-    window.addEventListener("mouseup", (event) => {
-      if (event.button === 2 && this.world.car.carGrounded) keys.jump = false;
-    });
 
-    window.addEventListener("keyup", (event) => {
-      if (event.code === "KeyW") keys.forward = false;
-      if (event.code === "KeyS") keys.backward = false;
-    }); */
     this.inputs.on("keyDown", (mapName) => {
       if (mapName === "jump") {
         keys.jump = true;
@@ -77,6 +61,12 @@ export default class Game extends EventEmitter {
       }
       if (mapName === "backward") {
         keys.backward = true;
+      }
+      if (mapName === "left") {
+        keys.left = true;
+      }
+      if (mapName === "right") {
+        keys.right = true;
       }
     });
     this.inputs.on("keyUp", (mapName) => {
@@ -89,6 +79,12 @@ export default class Game extends EventEmitter {
       }
       if (mapName === "jump") {
         keys.jump = false;
+      }
+      if (mapName === "left") {
+        keys.left = false;
+      }
+      if (mapName === "right") {
+        keys.right = false;
       }
     });
   }
