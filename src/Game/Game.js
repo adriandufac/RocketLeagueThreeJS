@@ -51,7 +51,7 @@ export default class Game extends EventEmitter {
     this.time.on("tick", () => {
       this.update();
     });
-    window.addEventListener("keydown", (event) => {
+    /*  window.addEventListener("keydown", (event) => {
       if (event.code === "KeyW" && this.world.car.carGrounded)
         keys.forward = true;
       if (event.code === "KeyS" && this.world.car.carGrounded)
@@ -67,35 +67,30 @@ export default class Game extends EventEmitter {
     window.addEventListener("keyup", (event) => {
       if (event.code === "KeyW") keys.forward = false;
       if (event.code === "KeyS") keys.backward = false;
-    });
-    /*   this.inputs.on("keyDown", (mapName) => {
-      console.log(mapName, "keyDown");
-
-      if (mapName === "jump" && this.world.car.carGrounded) {
+    }); */
+    this.inputs.on("keyDown", (mapName) => {
+      if (mapName === "jump") {
         keys.jump = true;
       }
-      if (mapName === "forward" && this.world.car.carGrounded) {
+      if (mapName === "forward") {
         keys.forward = true;
-        this.world.car.isMovingForward = true;
       }
-      if (mapName === "backward" && this.world.car.carGrounded) {
+      if (mapName === "backward") {
         keys.backward = true;
-        this.world.car.isMovingBackward = true;
       }
-      //this.update();
     });
     this.inputs.on("keyUp", (mapName) => {
       console.log(mapName, "keyUp");
       if (mapName === "forward") {
-        this.world.car.isMovingForward = false;
         keys.forward = false;
       }
       if (mapName === "backward") {
-        this.world.car.isMovingBackward = false;
         keys.backward = false;
       }
-      //this.update();
-    }); */
+      if (mapName === "jump") {
+        keys.jump = false;
+      }
+    });
   }
 
   resize() {
@@ -104,20 +99,11 @@ export default class Game extends EventEmitter {
   }
   update() {
     if (this.physicsReady) {
-      if (keys.forward) {
-        this.world.car.moveForward();
-      }
-      if (keys.backward) {
-        this.world.car.moveBackward();
-      }
-      if (keys.jump) {
-        this.world.car.jump();
-        keys.jump = false;
-      }
       this.physics.update();
       this.physicsDebug.update();
       this.camera.update();
-      this.world.update();
+
+      this.world.update(keys);
       this.renderer.update();
     }
   }

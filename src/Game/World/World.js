@@ -15,9 +15,9 @@ export default class World {
       this.car = new Car();
     });
   }
-  update() {
+  update(keys) {
     if (this.car) {
-      this.car.update();
+      this.car.update(keys);
     }
     if (this.arena) {
       this.arena.update();

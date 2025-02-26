@@ -21,177 +21,17 @@ export default class Car {
       x: 0.8,
       y: 0.9,
     };
-    this.debugObject.jumpForce = 1.4;
+    this.doubleJumpAvailable = true;
+    this.debugObject.jumpForce = 0.6;
 
     //setup
     this.ressource = this.ressources.items["octaneModel"];
 
-    if (this.debug.active) {
-      this.debugFolder
-        .add(this.debugObject, "jumpForce")
-        .min(0.5)
-        .max(10)
-        .step(0.1);
-      this.debugFolder
-        .add(this.debugObject.hitBoxRatios, "x")
-        .min(0.5)
-        .max(1.5)
-        .step(0.1)
-        .name("hitboxXratio")
-        .onChange(() => {
-          let currentPosition;
-          if (this.physicsBody) {
-            const translation = this.physicsBody.translation();
-            currentPosition = new THREE.Vector3(
-              translation.x,
-              translation.y,
-              translation.z
-            );
-          } else {
-            currentPosition = this.carHitbox.position.clone();
-          }
-
-          // Also store current rotation if needed
-          let currentRotation;
-          if (this.physicsBody) {
-            const rotation = this.physicsBody.rotation();
-            currentRotation = new THREE.Quaternion(
-              rotation.x,
-              rotation.y,
-              rotation.z,
-              rotation.w
-            );
-          } else {
-            currentRotation = this.carHitbox.quaternion.clone();
-          }
-
-          //clean
-          this.scene.remove(this.model);
-          this.scene.remove(this.carHitbox);
-          this.physics.removeEntity(this);
-
-          // Create new objects at the origin first
-          this.setModel(new THREE.Vector3(0, 0, 0));
-          this.setHitBox(true);
-
-          // Manually position both objects at the saved position
-          this.carHitbox.position.copy(currentPosition);
-          this.model.position.copy(currentPosition);
-
-          // Apply saved rotation if needed
-          this.carHitbox.quaternion.copy(currentRotation);
-          this.model.quaternion.copy(currentRotation);
-
-          this.physicsBody = this.physics.addEntity(this);
-        });
-      this.debugFolder
-        .add(this.debugObject.hitBoxRatios, "y")
-        .min(0.5)
-        .max(1.5)
-        .step(0.1)
-        .name("hitboxYratio")
-        .onChange(() => {
-          let currentPosition;
-          if (this.physicsBody) {
-            const translation = this.physicsBody.translation();
-            currentPosition = new THREE.Vector3(
-              translation.x,
-              translation.y,
-              translation.z
-            );
-          } else {
-            currentPosition = this.carHitbox.position.clone();
-          }
-
-          // Also store current rotation if needed
-          let currentRotation;
-          if (this.physicsBody) {
-            const rotation = this.physicsBody.rotation();
-            currentRotation = new THREE.Quaternion(
-              rotation.x,
-              rotation.y,
-              rotation.z,
-              rotation.w
-            );
-          } else {
-            currentRotation = this.carHitbox.quaternion.clone();
-          }
-
-          //clean
-          this.scene.remove(this.model);
-          this.scene.remove(this.carHitbox);
-          this.physics.removeEntity(this);
-
-          // Create new objects at the origin first
-          this.setModel(new THREE.Vector3(0, 0, 0));
-          this.setHitBox(true);
-
-          // Manually position both objects at the saved position
-          this.carHitbox.position.copy(currentPosition);
-          this.model.position.copy(currentPosition);
-
-          // Apply saved rotation if needed
-          this.carHitbox.quaternion.copy(currentRotation);
-          this.model.quaternion.copy(currentRotation);
-
-          this.physicsBody = this.physics.addEntity(this);
-        });
-      this.debugFolder
-        .add(this.debugObject, "scale")
-        .min(0.001)
-        .max(0.1)
-        .step(0.001)
-        .name("scale")
-        .onChange(() => {
-          let currentPosition;
-          if (this.physicsBody) {
-            const translation = this.physicsBody.translation();
-            currentPosition = new THREE.Vector3(
-              translation.x,
-              translation.y,
-              translation.z
-            );
-          } else {
-            currentPosition = this.carHitbox.position.clone();
-          }
-
-          // Also store current rotation if needed
-          let currentRotation;
-          if (this.physicsBody) {
-            const rotation = this.physicsBody.rotation();
-            currentRotation = new THREE.Quaternion(
-              rotation.x,
-              rotation.y,
-              rotation.z,
-              rotation.w
-            );
-          } else {
-            currentRotation = this.carHitbox.quaternion.clone();
-          }
-
-          //clean
-          this.scene.remove(this.model);
-          this.scene.remove(this.carHitbox);
-          this.physics.removeEntity(this);
-
-          // Create new objects at the origin first
-          this.setModel(new THREE.Vector3(0, 0, 0));
-          this.setHitBox(true);
-
-          // Manually position both objects at the saved position
-          this.carHitbox.position.copy(currentPosition);
-          this.model.position.copy(currentPosition);
-
-          // Apply saved rotation if needed
-          this.carHitbox.quaternion.copy(currentRotation);
-          this.model.quaternion.copy(currentRotation);
-
-          this.physicsBody = this.physics.addEntity(this);
-        });
-    }
+    this.setUpDebugFolder();
 
     this.setModel();
     this.setHitBox();
+    this.initRaycastVisuals();
   }
 
   setModel(position) {
@@ -243,24 +83,25 @@ export default class Car {
     }
   }
 
-  update() {
+  update(keys) {
     if (this.physicsBody.boxRigidBody) {
-      if (this.isMovingForward) {
+      if (keys.forward && this.carGrounded) {
         this.moveForward();
       }
-      if (this.isMovingBackward) {
+      if (keys.backward && this.carGrounded) {
         this.moveBackward();
+      }
+      if (keys.jump && this.carGrounded) {
+        this.jump();
       }
       // Get position from physics simulation
       const position = this.physicsBody.boxRigidBody.translation();
 
       // Update hitbox position
       this.carHitbox.position.set(position.x, position.y, position.z);
+
       // Update model position to match hitbox
-      // Calculate the offset between the hitbox center and model origin
-
       // Update model position to match the hitbox, applying the offset
-
       this.model.position.set(
         position.x,
         position.y - this.boxModelOffset + this.carHitboxOffset,
@@ -284,26 +125,38 @@ export default class Car {
 
   detectGround() {
     const { boxRigidBody, collider } = this.physicsBody; // Extract boxRigidBody and collider
-
+    console.log(collider);
     // Default fallback for half extents
     let halfExtents = { x: 1, y: 1, z: 1 };
 
     // Check if we have a valid collider and if it's a cuboid
-    if (
-      collider &&
-      collider.desc &&
-      collider.desc.shape &&
-      collider.desc.shape.halfExtents
-    ) {
-      halfExtents = collider.desc.shape.halfExtents;
+    if (collider && collider._shape && collider._shape.halfExtents) {
+      halfExtents = collider._shape.halfExtents;
     }
 
     // Raycast offsets based on the box dimensions (half extents)
+    const cornerOffset = 0.01;
     const rayOriginOffsets = [
-      new THREE.Vector3(halfExtents.x, 0, halfExtents.z), // Front-right
-      new THREE.Vector3(-halfExtents.x, 0, halfExtents.z), // Front-left
-      new THREE.Vector3(halfExtents.x, 0, -halfExtents.z), // Back-right
-      new THREE.Vector3(-halfExtents.x, 0, -halfExtents.z), // Back-left
+      new THREE.Vector3(
+        halfExtents.x + cornerOffset,
+        0,
+        halfExtents.z + cornerOffset
+      ), // Front-right
+      new THREE.Vector3(
+        -halfExtents.x - cornerOffset,
+        0,
+        halfExtents.z + cornerOffset
+      ), // Front-left
+      new THREE.Vector3(
+        halfExtents.x + cornerOffset,
+        0,
+        -halfExtents.z - cornerOffset
+      ), // Back-right
+      new THREE.Vector3(
+        -halfExtents.x - cornerOffset,
+        0,
+        -halfExtents.z - cornerOffset
+      ), // Back-left
     ];
 
     const groundDistanceThreshold = 0.3; // Very short distance threshold
@@ -311,15 +164,27 @@ export default class Car {
     let groundedRayCount = 0;
     // Check if all 4 raycasts hit the ground
 
-    rayOriginOffsets.forEach((offset) => {
+    rayOriginOffsets.forEach((offset, index) => {
       const position = boxRigidBody.translation(); // Correct way to get the position
+      // Get current car rotation as a quaternion
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      const carQuaternion = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // Scale by desired speed
+      //forwardVector.multiplyScalar(this.debugObject.moveSpeed || 1.0);
       const rayOrigin = new THREE.Vector3(
         position.x,
         position.y,
         position.z
-      ).add(offset); // Using boxRigidBody's translation
+      ).add(offset.applyQuaternion(carQuaternion)); // Using boxRigidBody's translation
       const rayDirection = new THREE.Vector3(0, -1, 0); // Ray points downward
-
+      rayDirection.applyQuaternion(carQuaternion); // Apply car's rotation
       // Create a ray using Rapier's Ray class (without needing RAPIER.Ray)
       const ray = new this.physics.RAPIER.Ray(rayOrigin, rayDirection);
 
@@ -330,8 +195,58 @@ export default class Car {
       if (hit) {
         groundedRayCount++;
       }
+      // Update the visual rays if they exist
+      if (this.rayLines && this.rayLines[index]) {
+        // Get the current ray line
+        const rayLine = this.rayLines[index];
+
+        // Validate ray origin position
+        if (isNaN(rayOrigin.x) || isNaN(rayOrigin.y) || isNaN(rayOrigin.z)) {
+          console.warn("Invalid ray origin position detected:", rayOrigin);
+          return; // Skip this ray
+        }
+
+        // Create start point (safe copy)
+        const startPoint = new THREE.Vector3(
+          rayOrigin.x,
+          rayOrigin.y,
+          rayOrigin.z
+        );
+
+        // Create end point with safety checks
+        let endPoint;
+        if (hit && !isNaN(hit.toi)) {
+          // Valid hit - calculate end point
+          const rayLength = Math.min(hit.toi, groundDistanceThreshold); // Prevent excessive lengths
+          endPoint = new THREE.Vector3(
+            rayOrigin.x + rayDirection.x * rayLength,
+            rayOrigin.y + rayDirection.y * rayLength,
+            rayOrigin.z + rayDirection.z * rayLength
+          );
+        } else {
+          // No hit or invalid hit - use threshold distance
+          endPoint = new THREE.Vector3(
+            rayOrigin.x + rayDirection.x * groundDistanceThreshold,
+            rayOrigin.y + rayDirection.y * groundDistanceThreshold,
+            rayOrigin.z + rayDirection.z * groundDistanceThreshold
+          );
+        }
+
+        // Final validation of points
+        if (isNaN(endPoint.x) || isNaN(endPoint.y) || isNaN(endPoint.z)) {
+          console.warn("Invalid ray end position calculated:", endPoint);
+          return; // Skip this ray
+        }
+
+        // Update ray geometry with validated points
+        const points = [startPoint, endPoint];
+        rayLine.geometry.dispose();
+        rayLine.geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+        // Update ray material based on hit/miss
+        rayLine.material = hit ? this.rayHitMaterial : this.rayMissMaterial;
+      }
     });
-    //  console.log(`Grounded Ray Count: ${groundedRayCount}`);
 
     // If all 4 rays hit the ground, the car is considered grounded
     const isCarGrounded = groundedRayCount === 4;
@@ -349,7 +264,6 @@ export default class Car {
         { x: 0.0, y: this.debugObject.jumpForce, z: 0.0 },
         true
       );
-      this.update();
     }
   }
   moveForward() {
@@ -357,24 +271,271 @@ export default class Car {
 
     if (this.physicsBody.boxRigidBody) {
       console.log("move forward");
-      const currentVelocity = this.physicsBody.boxRigidBody.linvel();
-      this.physicsBody.boxRigidBody.setLinvel(
-        { x: 1.0, y: currentVelocity.y, z: currentVelocity.z },
-        true
+      // Get current car rotation as a quaternion
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      const carQuaternion = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
       );
 
-      //this.physicsBody.boxRigidBody.setAngvel({ x: 2.0, y: 0.0, z: 0.0 }, true);
+      // Create a forward vector
+      const forwardVector = new THREE.Vector3(1, 0, 0);
+
+      // Apply the car's rotation to the forward vector
+      forwardVector.applyQuaternion(carQuaternion);
+
+      // Scale by desired speed
+      forwardVector.multiplyScalar(this.debugObject.moveSpeed || 1.0);
+      const currentVelocity = this.physicsBody.boxRigidBody.linvel();
+      this.physicsBody.boxRigidBody.setLinvel(
+        { x: forwardVector.x, y: currentVelocity.y, z: forwardVector.z },
+        true
+      );
     }
   }
 
   moveBackward() {
     if (this.physicsBody.boxRigidBody) {
+      // Get current car rotation as a quaternion
+      const rotation = this.physicsBody.boxRigidBody.rotation();
+
+      const carQuaternion = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // Create a forward vector
+      const forwardVector = new THREE.Vector3(-1, 0, 0);
+
+      // Apply the car's rotation to the forward vector
+      forwardVector.applyQuaternion(carQuaternion);
+
+      // Scale by desired speed
+      forwardVector.multiplyScalar(this.debugObject.moveSpeed || 1.0);
       const currentVelocity = this.physicsBody.boxRigidBody.linvel();
       console.log("move backward");
       this.physicsBody.boxRigidBody.setLinvel(
-        { x: -1.0, y: currentVelocity.y, z: currentVelocity.z },
+        { x: forwardVector.x, y: currentVelocity.y, z: forwardVector.z },
         true
       );
+    }
+  }
+
+  initRaycastVisuals() {
+    // Create a group to hold all ray visuals
+    this.rayVisuals = new THREE.Group();
+    this.scene.add(this.rayVisuals);
+
+    // Array to store ray line objects
+    this.rayLines = [];
+
+    // Create materials for hit/miss states
+    this.rayHitMaterial = new THREE.LineBasicMaterial({
+      color: 0x00ff00, // Green for ray hits
+      linewidth: 2,
+    });
+
+    this.rayMissMaterial = new THREE.LineBasicMaterial({
+      color: 0xff0000, // Red for ray misses
+      linewidth: 2,
+    });
+
+    // Create 4 ray lines (one for each corner)
+    for (let i = 0; i < 4; i++) {
+      // Create line geometry with initial points
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, -0.3, 0), // Initial ray length = threshold distance
+      ]);
+
+      // Create line with miss material by default
+      const rayLine = new THREE.Line(lineGeometry, this.rayMissMaterial);
+
+      // Add to group and store reference
+      this.rayVisuals.add(rayLine);
+      this.rayLines.push(rayLine);
+    }
+
+    // Add a debug toggle if debugging is enabled
+    if (this.debug.active) {
+      this.debugObject.showRays = true;
+      this.debugFolder
+        .add(this.debugObject, "showRays")
+        .name("Show Raycasts")
+        .onChange((value) => {
+          this.rayVisuals.visible = value;
+        });
+    }
+  }
+
+  setUpDebugFolder() {
+    if (this.debug.active) {
+      this.debugFolder
+        .add(this.debugObject, "jumpForce")
+        .min(0.5)
+        .max(10)
+        .step(0.1);
+      this.debugFolder
+        .add(this.debugObject.hitBoxRatios, "x")
+        .min(0.5)
+        .max(1.5)
+        .step(0.1)
+        .name("hitboxXratio")
+        .onChange(() => {
+          let currentPosition;
+          if (this.physicsBody.boxRigidBody) {
+            const translation = this.physicsBody.boxRigidBody.translation();
+            currentPosition = new THREE.Vector3(
+              translation.x,
+              translation.y,
+              translation.z
+            );
+          } else {
+            currentPosition = this.carHitbox.position.clone();
+          }
+
+          // Also store current rotation if needed
+          let currentRotation;
+          if (this.physicsBody) {
+            const rotation = this.physicsBody.boxRigidBody.rotation();
+            currentRotation = new THREE.Quaternion(
+              rotation.x,
+              rotation.y,
+              rotation.z,
+              rotation.w
+            );
+          } else {
+            currentRotation = this.carHitbox.quaternion.clone();
+          }
+
+          //clean
+          this.scene.remove(this.model);
+          this.scene.remove(this.carHitbox);
+          this.physics.removeEntity(this);
+
+          // Create new objects at the origin first
+          this.setModel(new THREE.Vector3(0, 0, 0));
+          this.setHitBox(true);
+
+          // Manually position both objects at the saved position
+          this.carHitbox.position.copy(currentPosition);
+          this.model.position.copy(currentPosition);
+
+          // Apply saved rotation if needed
+          this.carHitbox.quaternion.copy(currentRotation);
+          this.model.quaternion.copy(currentRotation);
+
+          this.physicsBody = this.physics.addEntity(this);
+        });
+      this.debugFolder
+        .add(this.debugObject.hitBoxRatios, "y")
+        .min(0.5)
+        .max(1.5)
+        .step(0.1)
+        .name("hitboxYratio")
+        .onChange(() => {
+          let currentPosition;
+          if (this.physicsBody) {
+            const translation = this.physicsBody.boxRigidBody.translation();
+            currentPosition = new THREE.Vector3(
+              translation.x,
+              translation.y,
+              translation.z
+            );
+          } else {
+            currentPosition = this.carHitbox.position.clone();
+          }
+
+          // Also store current rotation if needed
+          let currentRotation;
+          if (this.physicsBody.boxRigidBody) {
+            const rotation = this.physicsBody.boxRigidBody.rotation();
+            currentRotation = new THREE.Quaternion(
+              rotation.x,
+              rotation.y,
+              rotation.z,
+              rotation.w
+            );
+          } else {
+            currentRotation = this.carHitbox.quaternion.clone();
+          }
+
+          //clean
+          this.scene.remove(this.model);
+          this.scene.remove(this.carHitbox);
+          this.physics.removeEntity(this);
+
+          // Create new objects at the origin first
+          this.setModel(new THREE.Vector3(0, 0, 0));
+          this.setHitBox(true);
+
+          // Manually position both objects at the saved position
+          this.carHitbox.position.copy(currentPosition);
+          this.model.position.copy(currentPosition);
+
+          // Apply saved rotation if needed
+          this.carHitbox.quaternion.copy(currentRotation);
+          this.model.quaternion.copy(currentRotation);
+
+          this.physicsBody = this.physics.addEntity(this);
+        });
+      this.debugFolder
+        .add(this.debugObject, "scale")
+        .min(0.001)
+        .max(0.1)
+        .step(0.001)
+        .name("scale")
+        .onChange(() => {
+          let currentPosition;
+          if (this.physicsBody.boxRigidBody) {
+            const translation = this.physicsBody.boxRigidBody.translation();
+            currentPosition = new THREE.Vector3(
+              translation.x,
+              translation.y,
+              translation.z
+            );
+          } else {
+            currentPosition = this.carHitbox.position.clone();
+          }
+
+          // Also store current rotation if needed
+          let currentRotation;
+          if (this.physicsBody.boxRigidBody) {
+            const rotation = this.physicsBody.boxRigidBody.rotation();
+            currentRotation = new THREE.Quaternion(
+              rotation.x,
+              rotation.y,
+              rotation.z,
+              rotation.w
+            );
+          } else {
+            currentRotation = this.carHitbox.quaternion.clone();
+          }
+
+          //clean
+          this.scene.remove(this.model);
+          this.scene.remove(this.carHitbox);
+          this.physics.removeEntity(this);
+
+          // Create new objects at the origin first
+          this.setModel(new THREE.Vector3(0, 0, 0));
+          this.setHitBox(true);
+
+          // Manually position both objects at the saved position
+          this.carHitbox.position.copy(currentPosition);
+          this.model.position.copy(currentPosition);
+
+          // Apply saved rotation if needed
+          this.carHitbox.quaternion.copy(currentRotation);
+          this.model.quaternion.copy(currentRotation);
+
+          this.physicsBody = this.physics.addEntity(this);
+        });
     }
   }
 }
