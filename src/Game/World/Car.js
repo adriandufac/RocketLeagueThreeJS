@@ -14,15 +14,26 @@ export default class Car {
     if (this.debug.active) {
       this.debugFolder = this.debug.ui.addFolder("car");
     }
+    this.hasDoubleJump = true;
+    this.jumpAlreadyPressed = false;
     this.carGrounded = true;
     this.debugObject = {};
     this.debugObject.scale = 0.01;
+    this.jumpCooldown = 0;
     this.debugObject.hitBoxRatios = {
       x: 0.8,
       y: 0.9,
     };
     this.doubleJumpAvailable = true;
-    this.debugObject.jumpForce = 0.6;
+    this.debugObject.jumpForce = 2;
+
+    //flip
+    this.flippingObject = {};
+    this.flippingObject.isFlipping = false;
+    this.flippingObject.flipType = null;
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 60;
+    this.flippingObject.flipStartRotation = new THREE.Quaternion();
 
     //setup
     this.ressource = this.ressources.items["octaneModel"];
@@ -103,8 +114,8 @@ export default class Car {
       if (keys.backward && !this.carGrounded) {
         this.rotateBackward();
       }
-      if (keys.jump && this.carGrounded) {
-        this.jump();
+      if (keys.jump) {
+        this.jump(keys);
       }
       if (keys.barrelRight && !this.carGrounded) {
         this.barrelRight();
@@ -115,6 +126,7 @@ export default class Car {
       if (keys.boost) {
         this.boost(keys);
       }
+      this.updateFlip();
       // Get position from physics simulation
       const position = this.physicsBody.boxRigidBody.translation();
       // Get rotation from physics simulation
@@ -147,6 +159,7 @@ export default class Car {
       this.model.quaternion.copy(this.carHitbox.quaternion);
     }
     this.carGrounded = this.detectGround();
+    this.jumpAlreadyPressed = keys.jump;
   }
 
   detectGround() {
@@ -276,20 +289,227 @@ export default class Car {
 
     // If all 4 rays hit the ground, the car is considered grounded
     const isCarGrounded = groundedRayCount === 4;
-
+    if (isCarGrounded) {
+      this.hasDoubleJump = true;
+    }
     return isCarGrounded;
   }
 
-  jump() {
-    console.log("tryingto jump", this.carGrounded);
-    if (this.physicsBody.boxRigidBody && this.carGrounded) {
-      this.physicsBody.boxRigidBody.applyImpulse(
-        { x: 0.0, y: this.debugObject.jumpForce, z: 0.0 },
-        true
-      );
+  jump(keys) {
+    // Reduce jump cooldown timer if it's active
+    if (this.jumpCooldown > 0) {
+      this.jumpCooldown--;
+    }
+    if (this.jumpCooldown === 0) {
+      //detect new jump key pressed
+      const jumpJustPressed = keys.jump && !this.jumpAlreadyPressed;
+      console.log("tryingto jump", this.carGrounded, this.hasDoubleJump);
+      if (
+        this.physicsBody.boxRigidBody &&
+        this.carGrounded &&
+        jumpJustPressed
+      ) {
+        this.physicsBody.boxRigidBody.applyImpulse(
+          { x: 0.0, y: this.debugObject.jumpForce, z: 0.0 },
+          true
+        );
+        this.jumpCooldown = 10;
+      } else if (
+        // car is not grounded and has double jump
+        this.physicsBody.boxRigidBody &&
+        !this.carGrounded &&
+        this.hasDoubleJump &&
+        jumpJustPressed
+      ) {
+        console.log("yo");
+        // no keys => impulse up
+        if (!keys.left && !keys.right && !keys.forward && !keys.backward) {
+          console.log("double jump");
+          this.physicsBody.boxRigidBody.applyImpulse(
+            { x: 0.0, y: this.debugObject.jumpForce * 1.5, z: 0.0 },
+            true
+          );
+        } else if (
+          !keys.left &&
+          !keys.right &&
+          keys.forward &&
+          !keys.backward
+        ) {
+          this.frontFlip();
+        } else if (
+          !keys.forward &&
+          !keys.right &&
+          !keys.left &&
+          keys.backward
+        ) {
+          this.backFlip();
+        }
+
+        this.hasDoubleJump = false;
+      }
     }
   }
 
+  frontFlip() {
+    // Get current car orientation
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+    const carQuaternion = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // 1. Apply forward impulse in car's local forward direction
+    const forwardVector = new THREE.Vector3(1, 0, 0); // Local forward axis
+    forwardVector.applyQuaternion(carQuaternion);
+
+    // Scale and add upward component
+    const jumpVector = new THREE.Vector3(
+      forwardVector.x * this.debugObject.jumpForce * 0.7,
+      this.debugObject.jumpForce * 0.9, // Enough height for flip
+      forwardVector.z * this.debugObject.jumpForce * 0.7
+    );
+
+    // Apply forward+upward impulse
+    this.physicsBody.boxRigidBody.applyImpulse(jumpVector, true);
+
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "front";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 60; // Adjust for speed
+
+    // Get current physics state
+    const rotation2 = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation explicitly
+    this.flippingObject.flipStartRotation = new THREE.Quaternion(
+      rotation2.x,
+      rotation2.y,
+      rotation2.z,
+      rotation2.w
+    );
+
+    // Create the target orientation (full 360° rotation)
+    this.flippingObject.flipTargetRotation = this.calculateTargetRotation(
+      this.flippingObject.flipType
+    );
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    // Consume double jump
+    this.hasDoubleJump = false;
+  }
+  backFlip() {
+    console.log("Backflip");
+  }
+  calculateTargetRotation(flipType) {
+    // Get the starting orientation
+    const startQuat = this.flippingObject.flipStartRotation;
+
+    // Create the local rotation axis based on flip type
+    let localAxis;
+    let angle;
+
+    if (flipType === "front") {
+      // Frontflip: rotate around local Z axis (left to right axis)
+      localAxis = new THREE.Vector3(0, 0, 1);
+      angle = -Math.PI * 2; // Full negative rotation = forward flip
+    } else if (flipType === "back") {
+      // Backflip: rotate around local Z axis, opposite direction
+      localAxis = new THREE.Vector3(0, 0, 1);
+      angle = Math.PI * 2; // Full positive rotation = backward flip
+    } else if (flipType === "left") {
+      // Left flip: rotate around local X axis
+      localAxis = new THREE.Vector3(1, 0, 0);
+      angle = Math.PI * 2; // Full positive rotation = left flip
+    } else if (flipType === "right") {
+      // Right flip: rotate around local X axis, opposite direction
+      localAxis = new THREE.Vector3(1, 0, 0);
+      angle = -Math.PI * 2; // Full negative rotation = right flip
+    } else {
+      // Default to identity quaternion (no rotation)
+      return new THREE.Quaternion();
+    }
+
+    // Transform local axis to world axis using starting orientation
+    const worldAxis = localAxis.clone().applyQuaternion(startQuat);
+
+    // Create the rotation quaternion for the full 360° rotation
+    const rotationQuat = new THREE.Quaternion().setFromAxisAngle(
+      worldAxis,
+      angle
+    );
+
+    // Create the target quaternion by applying the rotation to the starting orientation
+    const targetQuat = new THREE.Quaternion().multiplyQuaternions(
+      rotationQuat,
+      startQuat
+    );
+
+    return targetQuat;
+  }
+  updateFlip() {
+    if (!this.flippingObject.isFlipping || !this.physicsBody.boxRigidBody)
+      return;
+
+    // Increment progress
+    this.flippingObject.flipProgress++;
+
+    // Calculate percentage (0 to 1)
+    const t = Math.min(
+      this.flippingObject.flipProgress / this.flippingObject.flipDuration,
+      1
+    );
+
+    try {
+      // Make sure we have valid start and target quaternions
+      if (
+        !this.flippingObject.flipStartRotation ||
+        !this.flippingObject.flipTargetRotation
+      ) {
+        console.error("Missing start or target rotation");
+        this.flippingObject.isFlipping = false;
+        return;
+      }
+
+      // Create a temporary quaternion for the interpolation
+      const currentQuat = new THREE.Quaternion();
+
+      // Use spherical linear interpolation (slerp) between start and target rotations
+      // This gives a smooth, constant-speed rotation regardless of the axis
+      currentQuat.slerpQuaternions(
+        this.flippingObject.flipStartRotation,
+        this.flippingObject.flipTargetRotation,
+        t
+      );
+
+      // Apply the interpolated rotation
+      this.physicsBody.boxRigidBody.setRotation(
+        {
+          x: currentQuat.x,
+          y: currentQuat.y,
+          z: currentQuat.z,
+          w: currentQuat.w,
+        },
+        true
+      );
+
+      // Check if flip is complete
+      if (
+        this.flippingObject.flipProgress >= this.flippingObject.flipDuration
+      ) {
+        console.log("Flip completed");
+        this.flippingObject.isFlipping = false;
+        this.flippingObject.flipType = null;
+      }
+    } catch (error) {
+      console.error("Error in flip update:", error);
+      this.flippingObject.isFlipping = false;
+    }
+  }
   boost(keys) {
     console.log("boosting");
     if (this.physicsBody.boxRigidBody) {
