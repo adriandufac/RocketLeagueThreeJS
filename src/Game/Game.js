@@ -20,6 +20,9 @@ const keys = {
   jump: false,
   barrelRight: false,
   barrelLeft: false,
+  boost: false,
+  left: false,
+  right: false,
 };
 export default class Game extends EventEmitter {
   constructor(canvas) {
@@ -76,6 +79,9 @@ export default class Game extends EventEmitter {
       if (mapName === "barrelLeft") {
         keys.barrelLeft = true;
       }
+      if (mapName === "boost") {
+        keys.boost = true;
+      }
     });
     this.inputs.on("keyUp", (mapName) => {
       console.log(mapName, "keyUp");
@@ -99,6 +105,9 @@ export default class Game extends EventEmitter {
       }
       if (mapName === "barrelLeft") {
         keys.barrelLeft = false;
+      }
+      if (mapName === "boost") {
+        keys.boost = false;
       }
     });
   }

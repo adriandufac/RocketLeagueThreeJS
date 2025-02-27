@@ -112,6 +112,9 @@ export default class Car {
       if (keys.barrelLeft && !this.carGrounded) {
         this.barrelLeft();
       }
+      if (keys.boost) {
+        this.boost(keys);
+      }
       // Get position from physics simulation
       const position = this.physicsBody.boxRigidBody.translation();
       // Get rotation from physics simulation
@@ -286,24 +289,50 @@ export default class Car {
       );
     }
   }
-  getCarAxis(localAxis) {
-    if (!this.physicsBody.boxRigidBody) return localAxis.clone();
 
-    const rotation = this.physicsBody.boxRigidBody.rotation();
-    const carQuaternion = new THREE.Quaternion(
-      rotation.x,
-      rotation.y,
-      rotation.z,
-      rotation.w
-    );
+  boost(keys) {
+    console.log("boosting");
+    if (this.physicsBody.boxRigidBody) {
+      // Get current car rotation as a quaternion
+      const rotation = this.physicsBody.boxRigidBody.rotation();
 
-    return localAxis.clone().applyQuaternion(carQuaternion);
+      const carQuaternion = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+
+      // Create a forward vector
+      const forwardVector = new THREE.Vector3(1, 0, 0);
+
+      // Apply the car's rotation to the forward vector
+      forwardVector.applyQuaternion(carQuaternion);
+
+      // Scale by desired speed
+      forwardVector.multiplyScalar(this.debugObject.moveSpeed || 2.5);
+      const currentVelocity = this.physicsBody.boxRigidBody.linvel();
+      // Blend the boost with current Y velocity (for gravity)
+      const gravityInfluence = 0.9; // 0 = full boost, 1 = full gravity
+      const newYVelocity =
+        forwardVector.y * (1 - gravityInfluence) +
+        currentVelocity.y * gravityInfluence;
+      this.physicsBody.boxRigidBody.setLinvel(
+        { x: forwardVector.x, y: newYVelocity, z: forwardVector.z },
+        true
+      );
+      if (this.carGrounded) {
+        if (keys.left) {
+          this.rotateLeft();
+        }
+        if (keys.right) {
+          this.rotateRight();
+        }
+      }
+    }
   }
   rotateForward() {
     if (this.physicsBody.boxRigidBody) {
-      // Get current angular velocity
-      const currentAngVel = this.physicsBody.boxRigidBody.angvel();
-
       // Get current orientation
       const rotation = this.physicsBody.boxRigidBody.rotation();
 
@@ -448,6 +477,7 @@ export default class Car {
     //right now it use the global X axis, we need to change it to the MODEL X axis
 
     if (this.physicsBody.boxRigidBody) {
+      if (keys.boost) return;
       console.log("move forward");
       // Get current car rotation as a quaternion
       const rotation = this.physicsBody.boxRigidBody.rotation();

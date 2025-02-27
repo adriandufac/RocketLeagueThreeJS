@@ -8,7 +8,7 @@ export default class Physics {
   constructor() {
     this.game = new Game();
     this.debug = this.game.debug;
-    this.gravity = { x: 0, y: 0, z: 0 };
+    this.gravity = { x: 0, y: -5, z: 0 };
     this.physicsObjects = [];
     if (this.debug.active) {
       this.debugFolder = this.debug.ui.addFolder("physics");

@@ -20,6 +20,10 @@ export default [
     keys: ["2"],
   },
   {
+    name: "boost",
+    keys: ["0"],
+  },
+  {
     name: "barrelRight",
     keys: ["KeyE"],
   },
