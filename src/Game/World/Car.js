@@ -343,6 +343,28 @@ export default class Car {
           keys.backward
         ) {
           this.backFlip();
+        } else if (
+          !keys.forward &&
+          keys.right &&
+          !keys.left &&
+          !keys.backward
+        ) {
+          this.sideRightFlip();
+        } else if (
+          !keys.forward &&
+          !keys.right &&
+          keys.left &&
+          !keys.backward
+        ) {
+          this.sideLeftFlip();
+        } else if (keys.forward && keys.right && !keys.left && !keys.backward) {
+          this.frontRightFlip();
+        } else if (keys.forward && !keys.right && keys.left && !keys.backward) {
+          this.frontLeftFlip();
+        } else if (!keys.forward && !keys.right && keys.left && keys.backward) {
+          this.backLeftFlip();
+        } else if (!keys.forward && keys.right && !keys.left && keys.backward) {
+          this.backRightFlip();
         }
 
         this.hasDoubleJump = false;
@@ -351,151 +373,375 @@ export default class Car {
   }
 
   frontFlip() {
-    // Get current car orientation
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "front";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
     const rotation = this.physicsBody.boxRigidBody.rotation();
-    const carQuaternion = new THREE.Quaternion(
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
       rotation.x,
       rotation.y,
       rotation.z,
       rotation.w
     );
 
-    // 1. Apply forward impulse in car's local forward direction
-    const forwardVector = new THREE.Vector3(1, 0, 0); // Local forward axis
-    forwardVector.applyQuaternion(carQuaternion);
+    // Store the flip axis based on type
 
-    // Scale and add upward component
-    const jumpVector = new THREE.Vector3(
-      forwardVector.x * this.debugObject.jumpForce * 0.7,
-      this.debugObject.jumpForce * 0.9, // Enough height for flip
-      forwardVector.z * this.debugObject.jumpForce * 0.7
-    );
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(0, 0, 1);
+    // Transform to world space
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = -1; // Negative for forward
 
-    // Apply forward+upward impulse
-    this.physicsBody.boxRigidBody.applyImpulse(jumpVector, true);
-
-    this.flippingObject = this.flippingObject || {};
-    this.flippingObject.isFlipping = true;
-    this.flippingObject.flipType = "front";
-    this.flippingObject.flipProgress = 0;
-    this.flippingObject.flipDuration = 60; // Adjust for speed
-
-    // Get current physics state
-    const rotation2 = this.physicsBody.boxRigidBody.rotation();
-
-    // Store the starting orientation explicitly
-    this.flippingObject.flipStartRotation = new THREE.Quaternion(
-      rotation2.x,
-      rotation2.y,
-      rotation2.z,
-      rotation2.w
-    );
-
-    // Create the target orientation (full 360° rotation)
-    this.flippingObject.flipTargetRotation = this.calculateTargetRotation(
-      this.flippingObject.flipType
-    );
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
 
     // Zero out angular velocity
     this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
-    // Consume double jump
-    this.hasDoubleJump = false;
+    return true;
   }
   backFlip() {
-    console.log("Backflip");
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "back";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(0, 0, 1);
+    // Transform to world space
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = 1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
   }
-  calculateTargetRotation(flipType) {
-    // Get the starting orientation
-    const startQuat = this.flippingObject.flipStartRotation;
+  sideRightFlip() {
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "right";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
 
-    // Create the local rotation axis based on flip type
-    let localAxis;
-    let angle;
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
 
-    if (flipType === "front") {
-      // Frontflip: rotate around local Z axis (left to right axis)
-      localAxis = new THREE.Vector3(0, 0, 1);
-      angle = -Math.PI * 2; // Full negative rotation = forward flip
-    } else if (flipType === "back") {
-      // Backflip: rotate around local Z axis, opposite direction
-      localAxis = new THREE.Vector3(0, 0, 1);
-      angle = Math.PI * 2; // Full positive rotation = backward flip
-    } else if (flipType === "left") {
-      // Left flip: rotate around local X axis
-      localAxis = new THREE.Vector3(1, 0, 0);
-      angle = Math.PI * 2; // Full positive rotation = left flip
-    } else if (flipType === "right") {
-      // Right flip: rotate around local X axis, opposite direction
-      localAxis = new THREE.Vector3(1, 0, 0);
-      angle = -Math.PI * 2; // Full negative rotation = right flip
-    } else {
-      // Default to identity quaternion (no rotation)
-      return new THREE.Quaternion();
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(1, 0, 0);
+    // Transform to world space
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = 1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
+  }
+  sideLeftFlip() {
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "left";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(1, 0, 0);
+    // Transform to world space
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = -1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
+  }
+  frontRightFlip() {
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "left";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(1, 0, -1);
+    // Transform to world space
+    // IMPORTANT: Normalize the vector to ensure consistent rotation speed
+    localZAxis.normalize();
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = 1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
+  }
+  frontLeftFlip() {
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "left";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(-1, 0, -1);
+    // Transform to world space
+    // IMPORTANT: Normalize the vector to ensure consistent rotation speed
+    localZAxis.normalize();
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = 1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
+  }
+  backLeftFlip() {
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "left";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(-1, 0, 1);
+    // Transform to world space
+    // IMPORTANT: Normalize the vector to ensure consistent rotation speed
+    localZAxis.normalize();
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = 1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
+  }
+  backRightFlip() {
+    // Initialize flip state
+    this.flippingObject = this.flippingObject || {};
+    this.flippingObject.isFlipping = true;
+    this.flippingObject.flipType = "left";
+    this.flippingObject.flipProgress = 0;
+    this.flippingObject.flipDuration = 70; // Adjust for speed
+
+    // Get current physics state
+    const rotation = this.physicsBody.boxRigidBody.rotation();
+
+    // Store the starting orientation
+    this.flippingObject.currentRotation = new THREE.Quaternion(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w
+    );
+
+    // Store the flip axis based on type
+
+    // Front flip: around local Z axis (negative direction)
+    const localZAxis = new THREE.Vector3(1, 0, 1);
+    // Transform to world space
+    // IMPORTANT: Normalize the vector to ensure consistent rotation speed
+    localZAxis.normalize();
+    localZAxis.applyQuaternion(this.flippingObject.currentRotation);
+    this.flippingObject.flipAxis = localZAxis;
+    this.flippingObject.flipDirection = 1; // Negative for forward
+
+    // Calculate rotation increment per frame
+    // For a full 360° rotation over the entire duration
+    this.flippingObject.rotationPerFrame =
+      (Math.PI * 2) / this.flippingObject.flipDuration;
+
+    // Zero out angular velocity
+    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    return true;
+  }
+
+  updateFlip() {
+    // Skip if not flipping or no physics
+    if (
+      !this.flippingObject ||
+      !this.flippingObject.isFlipping ||
+      !this.physicsBody ||
+      !this.physicsBody.boxRigidBody
+    ) {
+      return;
     }
 
-    // Transform local axis to world axis using starting orientation
-    const worldAxis = localAxis.clone().applyQuaternion(startQuat);
-
-    // Create the rotation quaternion for the full 360° rotation
-    const rotationQuat = new THREE.Quaternion().setFromAxisAngle(
-      worldAxis,
-      angle
-    );
-
-    // Create the target quaternion by applying the rotation to the starting orientation
-    const targetQuat = new THREE.Quaternion().multiplyQuaternions(
-      rotationQuat,
-      startQuat
-    );
-
-    return targetQuat;
-  }
-  updateFlip() {
-    if (!this.flippingObject.isFlipping || !this.physicsBody.boxRigidBody)
-      return;
-
-    // Increment progress
-    this.flippingObject.flipProgress++;
-
-    // Calculate percentage (0 to 1)
-    const t = Math.min(
-      this.flippingObject.flipProgress / this.flippingObject.flipDuration,
-      1
-    );
-
     try {
-      // Make sure we have valid start and target quaternions
+      // Make sure we have all required flip properties
       if (
-        !this.flippingObject.flipStartRotation ||
-        !this.flippingObject.flipTargetRotation
+        !this.flippingObject.currentRotation ||
+        !this.flippingObject.flipAxis ||
+        !this.flippingObject.flipDirection
       ) {
-        console.error("Missing start or target rotation");
+        console.error("Missing flip properties");
         this.flippingObject.isFlipping = false;
         return;
       }
 
-      // Create a temporary quaternion for the interpolation
-      const currentQuat = new THREE.Quaternion();
+      // Increment progress
+      this.flippingObject.flipProgress++;
 
-      // Use spherical linear interpolation (slerp) between start and target rotations
-      // This gives a smooth, constant-speed rotation regardless of the axis
-      currentQuat.slerpQuaternions(
-        this.flippingObject.flipStartRotation,
-        this.flippingObject.flipTargetRotation,
-        t
+      // Calculate rotation amount for this frame
+      const angleThisFrame =
+        this.flippingObject.rotationPerFrame *
+        this.flippingObject.flipDirection;
+
+      // Create rotation quaternion for this incremental step
+      const stepRotation = new THREE.Quaternion().setFromAxisAngle(
+        this.flippingObject.flipAxis,
+        angleThisFrame
       );
 
-      // Apply the interpolated rotation
+      // Apply to current rotation (accumulate rotation)
+      this.flippingObject.currentRotation.premultiply(stepRotation);
+
+      // Apply the updated rotation
       this.physicsBody.boxRigidBody.setRotation(
         {
-          x: currentQuat.x,
-          y: currentQuat.y,
-          z: currentQuat.z,
-          w: currentQuat.w,
+          x: this.flippingObject.currentRotation.x,
+          y: this.flippingObject.currentRotation.y,
+          z: this.flippingObject.currentRotation.z,
+          w: this.flippingObject.currentRotation.w,
         },
         true
       );
+
+      // Log progress occasionally
+      if (this.flippingObject.flipProgress % 10 === 0) {
+        console.log(
+          `Flip progress: ${this.flippingObject.flipProgress}/${this.flippingObject.flipDuration}`
+        );
+      }
 
       // Check if flip is complete
       if (
@@ -829,15 +1075,6 @@ export default class Car {
 
     // Reset angular velocity
     this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
-  }
-
-  limitAngVel(angVel, maxValues = { x: 0.8, y: 0.8, z: 0.8 }) {
-    // Clamp each component
-    angVel.x = Math.max(-maxValues.x, Math.min(maxValues.x, angVel.x));
-    angVel.y = Math.max(-maxValues.y, Math.min(maxValues.y, angVel.y));
-    angVel.z = Math.max(-maxValues.z, Math.min(maxValues.z, angVel.z));
-
-    return angVel;
   }
 
   initRaycastVisuals() {
