@@ -391,6 +391,25 @@ export default class Car {
       rotation.w
     );
 
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
+
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(1, 0, 0);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1.2; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
+
     // Store the flip axis based on type
 
     // Front flip: around local Z axis (negative direction)
@@ -406,7 +425,7 @@ export default class Car {
       (Math.PI * 2) / this.flippingObject.flipDuration;
 
     // Zero out angular velocity
-    this.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    //qthis.physicsBody.boxRigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
     return true;
   }
@@ -735,7 +754,28 @@ export default class Car {
         },
         true
       );
+      if (this.flippingObject.savedLinearVelocity) {
+        const currentVel = this.physicsBody.boxRigidBody.linvel();
 
+        // Apply gravity effect gradually to Y velocity
+        // This makes the flip arc look more natural
+        const gravityFactor = 0.98; // Slight reduction each frame (adjust as needed)
+        const newYVelocity =
+          this.flippingObject.savedLinearVelocity.y * gravityFactor;
+
+        // Update the saved Y velocity with gravity applied
+        this.flippingObject.savedLinearVelocity.y = newYVelocity;
+
+        // Set the linear velocity with the updated values
+        this.physicsBody.boxRigidBody.setLinvel(
+          {
+            x: this.flippingObject.savedLinearVelocity.x,
+            y: newYVelocity,
+            z: this.flippingObject.savedLinearVelocity.z,
+          },
+          true
+        );
+      }
       // Log progress occasionally
       if (this.flippingObject.flipProgress % 10 === 0) {
         console.log(
@@ -778,11 +818,21 @@ export default class Car {
       // Scale by desired speed
       forwardVector.multiplyScalar(this.debugObject.moveSpeed || 2.5);
       const currentVelocity = this.physicsBody.boxRigidBody.linvel();
-      // Blend the boost with current Y velocity (for gravity)
-      const gravityInfluence = 0.9; // 0 = full boost, 1 = full gravity
-      const newYVelocity =
-        forwardVector.y * (1 - gravityInfluence) +
-        currentVelocity.y * gravityInfluence;
+
+      // Check if we're in a jump state (positive Y velocity)
+      const isJumping = currentVelocity.y > 1.0; // Threshold to detect active jump
+      // Determine Y velocity based on jump state
+      let newYVelocity;
+      if (isJumping) {
+        // If jumping, preserve the current Y velocity entirely
+        newYVelocity = currentVelocity.y;
+      } else {
+        // If not in a jump, apply the normal gravity blend
+        const gravityInfluence = 0.9; // 0 = full boost, 1 = full gravity
+        newYVelocity =
+          forwardVector.y * (1 - gravityInfluence) +
+          currentVelocity.y * gravityInfluence;
+      }
       this.physicsBody.boxRigidBody.setLinvel(
         { x: forwardVector.x, y: newYVelocity, z: forwardVector.z },
         true
