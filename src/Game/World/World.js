@@ -12,7 +12,7 @@ export default class World {
       //setup
       this.environment = new Environment();
       this.floor = new Floor();
-      this.car = new Car();
+      this.car = new Car(1);
     });
   }
   update(keys) {

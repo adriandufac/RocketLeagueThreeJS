@@ -42,11 +42,12 @@ export default class Game extends EventEmitter {
     this.time = new Time();
     this.scene = new THREE.Scene();
     this.ressources = new Ressources(sources);
-    this.camera = new Camera();
-    this.renderer = new Renderer();
+
     this.physics = new Physics();
     this.physicsDebug = new PhysicsDebug();
     this.world = new World();
+    this.camera = new Camera();
+    this.renderer = new Renderer();
     this.inputs = new Inputs(inputs);
 
     this.sizes.on("resize", () => {

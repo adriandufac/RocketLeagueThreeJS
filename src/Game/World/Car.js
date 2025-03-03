@@ -2,7 +2,8 @@ import Game from "../Game";
 import * as THREE from "three";
 
 export default class Car {
-  constructor() {
+  constructor(id) {
+    this.id = id;
     this.game = new Game();
     this.scene = this.game.scene;
     this.ressources = this.game.ressources;
