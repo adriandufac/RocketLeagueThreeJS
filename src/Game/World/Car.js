@@ -109,7 +109,7 @@ export default class Car {
         this.rotateRight();
       }
       if (keys.backward && this.carGrounded) {
-        this.moveBackward();
+        this.moveBackward(keys);
       }
       if (keys.backward && !this.carGrounded) {
         this.rotateBackward();
@@ -447,6 +447,24 @@ export default class Car {
       rotation.z,
       rotation.w
     );
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
+
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(-1, 0, 0);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1.2; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
 
     // Store the flip axis based on type
 
@@ -486,7 +504,24 @@ export default class Car {
       rotation.w
     );
 
-    // Store the flip axis based on type
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
+
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(0, 0, 1);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
 
     // Front flip: around local Z axis (negative direction)
     const localZAxis = new THREE.Vector3(1, 0, 0);
@@ -523,6 +558,24 @@ export default class Car {
       rotation.z,
       rotation.w
     );
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
+
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
 
     // Store the flip axis based on type
 
@@ -561,6 +614,25 @@ export default class Car {
       rotation.z,
       rotation.w
     );
+
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
+
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(1, 0, 1);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
 
     // Store the flip axis based on type
 
@@ -601,7 +673,24 @@ export default class Car {
       rotation.z,
       rotation.w
     );
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
 
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(1, 0, -1);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
     // Store the flip axis based on type
 
     // Front flip: around local Z axis (negative direction)
@@ -641,7 +730,24 @@ export default class Car {
       rotation.z,
       rotation.w
     );
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
 
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(-1, 0, -1);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1.2; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
     // Store the flip axis based on type
 
     // Front flip: around local Z axis (negative direction)
@@ -681,6 +787,24 @@ export default class Car {
       rotation.z,
       rotation.w
     );
+    // Store current linear velocity to preserve momentum
+    const currentVel = this.physicsBody.boxRigidBody.linvel();
+    this.flippingObject.savedLinearVelocity = {
+      x: currentVel.x,
+      y: currentVel.y,
+      z: currentVel.z,
+    };
+
+    // Add a small forward boost during frontflip
+    const forwardVector = new THREE.Vector3(-1, 0, 1);
+    forwardVector.applyQuaternion(this.flippingObject.currentRotation);
+
+    // Boost forward velocity slightly for frontflip
+    const boostMultiplier = 1.2; // Adjust as needed
+    this.flippingObject.savedLinearVelocity.x +=
+      forwardVector.x * boostMultiplier;
+    this.flippingObject.savedLinearVelocity.z +=
+      forwardVector.z * boostMultiplier;
 
     // Store the flip axis based on type
 
@@ -1027,7 +1151,7 @@ export default class Car {
     }
   }
 
-  moveBackward() {
+  moveBackward(keys) {
     if (this.physicsBody.boxRigidBody) {
       // Get current car rotation as a quaternion
       const rotation = this.physicsBody.boxRigidBody.rotation();
@@ -1053,6 +1177,12 @@ export default class Car {
         { x: forwardVector.x, y: currentVelocity.y, z: forwardVector.z },
         true
       );
+      if (keys.left) {
+        this.rotateRight();
+      }
+      if (keys.right) {
+        this.rotateLeft();
+      }
     }
   }
   barrelLeft() {
