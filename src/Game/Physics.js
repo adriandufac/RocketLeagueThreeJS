@@ -2,6 +2,7 @@ import Game from "./Game.js";
 import RAPIER from "@dimforge/rapier3d-compat";
 import Car from "./World/Car.js";
 import Floor from "./World/Arena/Floor.js";
+import Ball from "./World/Ball.js";
 import * as THREE from "three";
 
 export default class Physics {
@@ -109,6 +110,42 @@ export default class Physics {
         rigidBody: floorRigidBody,
       });
       return floorRigidBody;
+    }
+    if (entity instanceof Ball) {
+      // Get ball properties
+      const ballMesh = entity.mesh;
+      const ballRadius = entity.radius || ballMesh.geometry.parameters.radius;
+
+      // Get world position
+      const position = new THREE.Vector3();
+      ballMesh.getWorldPosition(position);
+
+      // Create dynamic rigid body for ball
+      const ballRigidBodyDesc = this.RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(position.x, position.y, position.z)
+        .setAngularDamping(0.2) // Less angular damping than car for more realistic rolling
+        .setLinearDamping(0.1); // Some linear damping to prevent endless rolling
+
+      // Create rigid body
+      const ballRigidBody = this.world.createRigidBody(ballRigidBodyDesc);
+
+      // Create spherical collider
+      const ballColliderDesc = this.RAPIER.ColliderDesc.ball(ballRadius)
+        .setRestitution(0.7) // Bounciness
+        .setFriction(0.3); // Surface friction
+
+      const collider = this.world.createCollider(
+        ballColliderDesc,
+        ballRigidBody
+      );
+
+      // Add to physics objects array
+      this.physicsObjects.push({
+        entity: entity,
+        rigidBody: ballRigidBody,
+      });
+
+      return { ballRigidBody, collider };
     }
   }
 

@@ -2,6 +2,7 @@ import Game from "../Game";
 import Environment from "./Environment";
 import Car from "./Car";
 import Floor from "./Arena/Floor";
+import Ball from "./Ball";
 
 export default class World {
   constructor() {
@@ -13,6 +14,7 @@ export default class World {
       this.environment = new Environment();
       this.floor = new Floor();
       this.car = new Car(1);
+      this.ball = new Ball();
     });
   }
   update(keys) {
@@ -21,6 +23,9 @@ export default class World {
     }
     if (this.arena) {
       this.arena.update();
+    }
+    if (this.ball) {
+      this.ball.update();
     }
   }
 }
