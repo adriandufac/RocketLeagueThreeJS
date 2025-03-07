@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Game from "../../Game";
+import { sizes } from "./sizes";
 
 export default class Floor {
   constructor() {
@@ -15,7 +16,7 @@ export default class Floor {
   }
 
   setGeometry() {
-    this.geometry = new THREE.PlaneGeometry(50, 140, 1, 1);
+    this.geometry = new THREE.PlaneGeometry(sizes.width, sizes.length, 1, 1);
   }
 
   setTextures() {}

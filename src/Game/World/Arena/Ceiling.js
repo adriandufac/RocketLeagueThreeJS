@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Game from "../../Game";
+import { sizes } from "./sizes";
 
 export default class Ceiling {
   constructor() {
@@ -8,9 +9,9 @@ export default class Ceiling {
     this.physics = this.game.physics;
 
     // Arena dimensions based on floor size
-    this.arenaWidth = 50;
-    this.arenaLength = 140;
-    this.arenaHeight = 50; // Same as width
+    this.arenaWidth = sizes.width;
+    this.arenaLength = sizes.length;
+    this.arenaHeight = sizes.height; // Same as width
 
     this.ceilingColor = 0x606060; // Slightly darker than walls
 

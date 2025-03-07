@@ -17,6 +17,8 @@ export default class Car {
     }
     this.hasDoubleJump = true;
     this.jumpAlreadyPressed = false;
+    this.moveSpeed = 4;
+    this.boostForce = 10;
     this.carGrounded = true;
     this.debugObject = {};
     this.debugObject.scale = 0.01;
@@ -26,7 +28,11 @@ export default class Car {
       y: 0.9,
     };
     this.doubleJumpAvailable = true;
-    this.debugObject.jumpForce = 2;
+    this.debugObject.jumpForce = 5500;
+
+    this.debugObject.moveSpeed = 4;
+    this.debugObject.boostForce = 8;
+    this.debugObject.boostMultiplier = 3;
 
     //flip
     this.flippingObject = {};
@@ -304,7 +310,7 @@ export default class Car {
     if (this.jumpCooldown === 0) {
       //detect new jump key pressed
       const jumpJustPressed = keys.jump && !this.jumpAlreadyPressed;
-      console.log("tryingto jump", this.carGrounded, this.hasDoubleJump);
+
       if (
         this.physicsBody.boxRigidBody &&
         this.carGrounded &&
@@ -322,10 +328,8 @@ export default class Car {
         this.hasDoubleJump &&
         jumpJustPressed
       ) {
-        console.log("yo");
         // no keys => impulse up
         if (!keys.left && !keys.right && !keys.forward && !keys.backward) {
-          console.log("double jump");
           this.physicsBody.boxRigidBody.applyImpulse(
             { x: 0.0, y: this.debugObject.jumpForce * 1.5, z: 0.0 },
             true
@@ -405,11 +409,11 @@ export default class Car {
     forwardVector.applyQuaternion(this.flippingObject.currentRotation);
 
     // Boost forward velocity slightly for frontflip
-    const boostMultiplier = 1.2; // Adjust as needed
+
     this.flippingObject.savedLinearVelocity.x +=
-      forwardVector.x * boostMultiplier;
+      forwardVector.x * this.debugObject.boostMultiplier;
     this.flippingObject.savedLinearVelocity.z +=
-      forwardVector.z * boostMultiplier;
+      forwardVector.z * this.debugObject.boostMultiplier;
 
     // Store the flip axis based on type
 
@@ -461,11 +465,11 @@ export default class Car {
     forwardVector.applyQuaternion(this.flippingObject.currentRotation);
 
     // Boost forward velocity slightly for frontflip
-    const boostMultiplier = 1.2; // Adjust as needed
+
     this.flippingObject.savedLinearVelocity.x +=
-      forwardVector.x * boostMultiplier;
+      forwardVector.x * this.debugObject.boostMultiplier * 0.5;
     this.flippingObject.savedLinearVelocity.z +=
-      forwardVector.z * boostMultiplier;
+      forwardVector.z * this.debugObject.boostMultiplier * 0.5;
 
     // Store the flip axis based on type
 
@@ -629,11 +633,11 @@ export default class Car {
     forwardVector.applyQuaternion(this.flippingObject.currentRotation);
 
     // Boost forward velocity slightly for frontflip
-    const boostMultiplier = 1; // Adjust as needed
+    //const boostMultiplier = 1; // Adjust as needed
     this.flippingObject.savedLinearVelocity.x +=
-      forwardVector.x * boostMultiplier;
+      forwardVector.x * this.debugObject.boostMultiplier;
     this.flippingObject.savedLinearVelocity.z +=
-      forwardVector.z * boostMultiplier;
+      forwardVector.z * this.debugObject.boostMultiplier;
 
     // Store the flip axis based on type
 
@@ -687,11 +691,11 @@ export default class Car {
     forwardVector.applyQuaternion(this.flippingObject.currentRotation);
 
     // Boost forward velocity slightly for frontflip
-    const boostMultiplier = 1; // Adjust as needed
+    //const boostMultiplier = 1; // Adjust as needed
     this.flippingObject.savedLinearVelocity.x +=
-      forwardVector.x * boostMultiplier;
+      forwardVector.x * this.debugObject.boostMultiplier;
     this.flippingObject.savedLinearVelocity.z +=
-      forwardVector.z * boostMultiplier;
+      forwardVector.z * this.debugObject.boostMultiplier;
     // Store the flip axis based on type
 
     // Front flip: around local Z axis (negative direction)
@@ -901,18 +905,11 @@ export default class Car {
           true
         );
       }
-      // Log progress occasionally
-      if (this.flippingObject.flipProgress % 10 === 0) {
-        console.log(
-          `Flip progress: ${this.flippingObject.flipProgress}/${this.flippingObject.flipDuration}`
-        );
-      }
 
       // Check if flip is complete
       if (
         this.flippingObject.flipProgress >= this.flippingObject.flipDuration
       ) {
-        console.log("Flip completed");
         this.flippingObject.isFlipping = false;
         this.flippingObject.flipType = null;
       }
@@ -922,7 +919,6 @@ export default class Car {
     }
   }
   boost(keys) {
-    console.log("boosting");
     if (this.physicsBody.boxRigidBody) {
       // Get current car rotation as a quaternion
       const rotation = this.physicsBody.boxRigidBody.rotation();
@@ -941,7 +937,7 @@ export default class Car {
       forwardVector.applyQuaternion(carQuaternion);
 
       // Scale by desired speed
-      forwardVector.multiplyScalar(this.debugObject.moveSpeed || 2.5);
+      forwardVector.multiplyScalar(this.debugObject.boostForce);
       const currentVelocity = this.physicsBody.boxRigidBody.linvel();
 
       // Check if we're in a jump state (positive Y velocity)
@@ -1119,7 +1115,7 @@ export default class Car {
 
     if (this.physicsBody.boxRigidBody) {
       if (keys.boost) return;
-      console.log("move forward");
+
       // Get current car rotation as a quaternion
       const rotation = this.physicsBody.boxRigidBody.rotation();
 
@@ -1137,7 +1133,9 @@ export default class Car {
       forwardVector.applyQuaternion(carQuaternion);
 
       // Scale by desired speed
-      forwardVector.multiplyScalar(this.debugObject.moveSpeed || 1.0);
+      forwardVector.multiplyScalar(
+        this.debugObject.moveSpeed || this.moveSpeed
+      );
       const currentVelocity = this.physicsBody.boxRigidBody.linvel();
       this.physicsBody.boxRigidBody.setLinvel(
         { x: forwardVector.x, y: currentVelocity.y, z: forwardVector.z },
@@ -1173,7 +1171,7 @@ export default class Car {
       // Scale by desired speed
       forwardVector.multiplyScalar(this.debugObject.moveSpeed || 1.0);
       const currentVelocity = this.physicsBody.boxRigidBody.linvel();
-      console.log("move backward");
+
       this.physicsBody.boxRigidBody.setLinvel(
         { x: forwardVector.x, y: currentVelocity.y, z: forwardVector.z },
         true
@@ -1312,6 +1310,21 @@ export default class Car {
         .min(0.5)
         .max(10)
         .step(0.1);
+      this.debugFolder
+        .add(this.debugObject, "moveSpeed")
+        .min(0.5)
+        .max(10)
+        .step(0.1);
+      this.debugFolder
+        .add(this.debugObject, "boostForce")
+        .min(0.5)
+        .max(20)
+        .step(0.5);
+      this.debugFolder
+        .add(this.debugObject, "jumpForce")
+        .min(500)
+        .max(10000)
+        .step(500);
       this.debugFolder
         .add(this.debugObject.hitBoxRatios, "x")
         .min(0.5)

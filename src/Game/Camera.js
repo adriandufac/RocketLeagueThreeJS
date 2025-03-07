@@ -18,7 +18,7 @@ export default class Camera {
       35,
       this.sizes.width / this.sizes.height,
       0.1,
-      100
+      130
     );
     this.instance.position.set(4, 6, 7);
     console.log("camera instance", this.instance);
@@ -47,8 +47,6 @@ export default class Camera {
       const rotation = physicsObj.rigidBody.rotation();
       const position = physicsObj.rigidBody.translation(); //boxRigidBody.translation();
       const isCarGrounded = this.game.world.car.carGrounded;
-      console.log("car position", position);
-      console.log("car rotation", rotation);
       return { position, rotation, isCarGrounded };
     }
   }

@@ -7,7 +7,7 @@ export default class Ball {
     this.physics = this.game.physics;
 
     // Configuration
-    this.radius = 1;
+    this.radius = 0.8;
     this.position = { x: 0, y: 5, z: 0 }; // Slightly above ground level
 
     this.setGeometry();
